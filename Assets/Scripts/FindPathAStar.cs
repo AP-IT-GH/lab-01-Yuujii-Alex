@@ -185,14 +185,25 @@ public class FindPathAStar : MonoBehaviour
 
 		if (Input.GetKeyDown(KeyCode.P))
 		{
-			Debug.Log("Search started");
+
 			BeginSearch();
 			hasStarted = true;
 		}
 
 
 		if (hasStarted)
-			if (Input.GetKeyDown(KeyCode.C)) Search(lastPos);
+			if (Input.GetKeyDown(KeyCode.C))
+				StartCoroutine(Searching());
+
+		if(searchingHasFinished)
+		{
+			ReconstructPath();
+		}
+
+		if (PathHasConstructed)
+		{
+			StartCoroutine(Walking());
+		}
 	}
 
 	// The coroutine function
@@ -207,13 +218,28 @@ public class FindPathAStar : MonoBehaviour
 			Debug.Log("Coroutine is running...");
 			Search(lastPos);
 			// Wait for the next frame
-			//            yield return true;
+			yield return true;
 		}
 
 		searchingHasFinished = true;
-		yield return null;
+		
+		yield return new WaitForSeconds(1);
 
 		Debug.Log("Coroutine finished!");
+	}
+
+	IEnumerator Walking()
+	{
+		Debug.Log("walking");
+		GameObject player = GameObject.FindGameObjectWithTag("Player");
+
+
+		foreach (PathMarker marker in path)
+		{
+			Vector3 targetPosition = new Vector3(marker.location.x * maze.scale, player.transform.position.y, marker.location.z * maze.scale);
+			player.transform.position = targetPosition;
+			yield return new WaitForSeconds(1f);
+		}
 	}
 
 	bool PathHasConstructed = false;
@@ -230,24 +256,23 @@ public class FindPathAStar : MonoBehaviour
 		}
 		path.Insert(0, startNode);
 		PathHasConstructed = true;
-
-
 	}
 
 }
-
 public static class ListExtensions
 {
-	public static void Shuffle<T>(this IList<T> ts)
+	private static System.Random rng = new System.Random();
+
+	public static void Shuffle<T>(this IList<T> list)
 	{
-		var count = ts.Count;
-		var last = count - 1;
-		for (var i = 0; i < last; ++i)
+		int n = list.Count;
+		while (n > 1)
 		{
-			var r = UnityEngine.Random.Range(i, count);
-			var tmp = ts[i];
-			ts[i] = ts[r];
-			ts[r] = tmp;
+			n--;
+			int k = rng.Next(n + 1);
+			T value = list[k];
+			list[k] = list[n];
+			list[n] = value;
 		}
 	}
 }
